@@ -1,2 +1,5 @@
-# kiwi-flights-assessment
-Kiwi assessment for parsing flights
+# Flights assessment
+
+### General:
+
+* Python: 3.9
