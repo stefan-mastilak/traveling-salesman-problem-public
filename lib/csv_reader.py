@@ -5,6 +5,7 @@ Data reader
 """
 
 import os
+import config as cfg
 
 
 class CsvReader(object):
@@ -13,11 +14,11 @@ class CsvReader(object):
     NOTE: I'm not sure if csv module is allowed, even if its part of standard lib. So I'm creating my own reader :-)
     """
 
-    def __init__(self, filepath):
+    def __init__(self, filename: str):
         """
-        :param filepath: full path to csv file
+        :param filename: csv filename with extension
         """
-        self.filepath = filepath
+        self.filepath = os.path.join(cfg.ROOT_DIR, "example", filename)
 
     def __get_raw_data(self):
         """
@@ -40,7 +41,7 @@ class CsvReader(object):
         else:
             raise FileNotFoundError(f"Provided filepath doesn't exist: {self.filepath}")
 
-    def read(self):
+    def read_data(self):
         """
         Read flight cases from .csv file.
         :return: formatted data - list of dicts (each dict is a flight case fetched from .csv file)
