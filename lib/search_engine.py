@@ -16,11 +16,12 @@ Optional arguments:
 """
 
 import datetime
+import json
 import time
 from lib.csv_reader import CsvReader
 
 
-class SearchEng(CsvReader):
+class SearchEngine(CsvReader):
     """
     Search engine
     """
@@ -80,6 +81,17 @@ class SearchEng(CsvReader):
         :rtype: int
         """
         return hours * 3600
+
+    @staticmethod
+    def __join_results(direct, connection):
+        """
+        Join direct and connection flights results
+        :param direct: direct flights list
+        :param connection: connection flights list
+        :return: joined result
+        :rtype: list
+        """
+        return [*direct, *connection]
 
     def get_direct_flights(self, org: str, des: str, bags=0):
         """
@@ -191,9 +203,23 @@ class SearchEng(CsvReader):
         # Return connection flights:
         return results
 
+    def search(self, org: str, des: str, bags=0, min_time=1, max_time=6):
+        """
+        Search method - searching of direct and connection flights from origin to destination.
+        :param org:
+        :param des:
+        :param bags:
+        :param min_time:
+        :param max_time:
+        :return:
+        """
+        direct = self.get_direct_flights(org, des, bags)
+        connection = self.get_connection_flights(org, des, bags, min_time, max_time)
+        result = self.__join_results(direct, connection)  # TODO: sort results by 'total_price'
+        return json.dumps(result)
 
-a = SearchEng("example2.csv")
-res = a.get_direct_flights(org='IUT', des="LOM", bags=1)
+
+a = SearchEngine("example2.csv")
+res = a.search(org='IUT', des="LOM", bags=1)
 print(res)
-
 
