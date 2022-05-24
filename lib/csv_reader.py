@@ -4,6 +4,8 @@
 Data reader
 """
 
+import datetime
+import time
 import os
 import config as cfg
 
@@ -11,7 +13,7 @@ import config as cfg
 class CsvReader(object):
     """
     Class for reading data from .csv file
-    NOTE: I'm not sure if csv module is allowed, even if its part of standard lib. So I'm creating my own reader :-)
+    NOTE: I'm not sure if csv module is allowed, even if its part of standard lib
     """
 
     def __init__(self, filename: str):
@@ -19,6 +21,16 @@ class CsvReader(object):
         :param filename: csv filename with extension
         """
         self.filepath = os.path.join(cfg.ROOT_DIR, "example", filename)
+
+    @staticmethod
+    def __to_timestamp(date: str):
+        """
+        Method will convert datetime from string in format "%Y-%m-%dT%H:%M:%S" to the timestamp
+        :param date: datetime string ("%Y-%m-%dT%H:%M:%S")
+        :return: timestamp
+        :rtype: float
+        """
+        return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
 
     def __get_raw_data(self):
         """
@@ -47,12 +59,12 @@ class CsvReader(object):
         :return: formatted data - list of dicts (each dict is a flight case fetched from .csv file)
         :rtype: list
         """
-        # split data:
+        # data split:
         raw_data = self.__get_raw_data()
         header = {idx: val for idx, val in enumerate(raw_data[0].split(sep=","))}
         flight_data = [i.split(sep=",") for i in raw_data[1:]]
 
-        # consistency check:
+        # data consistency check:
         for case in flight_data:
             if len(case) == len(header):
                 pass
@@ -60,14 +72,20 @@ class CsvReader(object):
                 raise ValueError(f"Inconsistent flight data")
 
         # format data
-        # NOTE: organise flight case into the list of dicts, where each dict represents one flight case
-        # NOTE values from original header are used as keys in each flight case dict
-
         formatted_data = []
         for line in flight_data:
             current = {}
             for idx, val in enumerate(line):
                 current[header[idx]] = val
+            # transform datetime values to timestamps:
+            current["departure"] = self.__to_timestamp(current["departure"])
+            current["arrival"] = self.__to_timestamp(current["arrival"])
+            # transform bags to integer:
+            current["bags_allowed"] = int(current["bags_allowed"])
+            # transform prices to floats:
+            current["base_price"] = float(current["base_price"])
+            current["bag_price"] = float(current["bag_price"])
+            # append current flight case:
             formatted_data.append(current)
 
         # return formatted data:

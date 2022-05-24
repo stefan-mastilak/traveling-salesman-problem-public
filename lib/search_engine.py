@@ -17,7 +17,6 @@ Optional arguments:
 
 import datetime
 import json
-import time
 from lib.csv_reader import CsvReader
 
 
@@ -29,16 +28,6 @@ class SearchEngine(CsvReader):
     def __init__(self, *args):
         super().__init__(*args)
         self.data = self.read_data()
-
-    @staticmethod
-    def __to_timestamp(date: str):
-        """
-        Method will convert datetime from string in format "%Y-%m-%dT%H:%M:%S" to the timestamp
-        :param date: datetime string ("%Y-%m-%dT%H:%M:%S")
-        :return: timestamp
-        :rtype: float
-        """
-        return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
 
     @staticmethod
     def __to_datetime(timestamp: float):
@@ -62,7 +51,7 @@ class SearchEngine(CsvReader):
         return str(datetime.timedelta(seconds=arrival-departure))
 
     @staticmethod
-    def __calc_price(base, bag, bags):
+    def __calc_price(base: float, bag: float, bags: int):
         """
         Calculate total flight price as sum of base flight price and price for bags
         :param base: base price of flight
@@ -70,7 +59,7 @@ class SearchEngine(CsvReader):
         :param bags: number of bags
         :return:
         """
-        return float(base + float(bag * bags))
+        return base + (bag * bags)
 
     @staticmethod
     def __to_seconds(hours: float):
@@ -113,11 +102,11 @@ class SearchEngine(CsvReader):
             # Get flight details:
             _org = flight['origin']
             _des = flight['destination']
-            _dep = self.__to_timestamp(date=flight['departure'])
-            _arr = self.__to_timestamp(date=flight['arrival'])
-            _bags = int(flight['bags_allowed'])
-            _base_price = float(flight['base_price'])
-            _bag_price = float(flight['bag_price'])
+            _dep = flight['departure']
+            _arr = flight['arrival']
+            _bags = flight['bags_allowed']
+            _base_price = flight['base_price']
+            _bag_price = flight['bag_price']
 
             # Check direct flights:
             if org == _org and des == _des and bags <= _bags:
@@ -160,7 +149,7 @@ class SearchEngine(CsvReader):
             # Get flight details:
             _org = flight['origin']
             _des = flight['destination']
-            _bags = int(flight['bags_allowed'])
+            _bags = flight['bags_allowed']
 
             # Get all flights from origin and not to destination:
             conn_origins.append(flight) if org == _org and des != _des and bags <= _bags else None
@@ -171,20 +160,20 @@ class SearchEngine(CsvReader):
         # Pair connections:
         for i in conn_origins:
             _org_des = i["destination"]
-            _org_dep = self.__to_timestamp(date=i["departure"])
-            _org_arr = self.__to_timestamp(date=i["arrival"])
-            _org_bags = int(i["bags_allowed"])
-            _org_base_price = float(i["base_price"])
-            _org_bag_price = float(i["bag_price"])
+            _org_dep = i["departure"]
+            _org_arr = i["arrival"]
+            _org_bags = i["bags_allowed"]
+            _org_base_price = i["base_price"]
+            _org_bag_price = i["bag_price"]
             _org_total = self.__calc_price(base=_org_base_price, bag=_org_bag_price, bags=bags)
 
             for j in conn_destinations:
                 _des_org = j["origin"]
-                _des_dep = self.__to_timestamp(date=j["departure"])
-                _des_arr = self.__to_timestamp(date=j["arrival"])
-                _des_bags = int(j["bags_allowed"])
-                _des_base_price = float(j["base_price"])
-                _des_bag_price = float(j["bag_price"])
+                _des_dep = j["departure"]
+                _des_arr = j["arrival"]
+                _des_bags = j["bags_allowed"]
+                _des_base_price = j["base_price"]
+                _des_bag_price = j["bag_price"]
                 _des_total = self.__calc_price(base=_des_base_price, bag=_des_bag_price, bags=bags)
 
                 # Check connection flights:
@@ -218,8 +207,27 @@ class SearchEngine(CsvReader):
         result = self.__join_results(direct, connection)  # TODO: sort results by 'total_price'
         return json.dumps(result)
 
+    def get_routes(self, org, des, bags=0, depth=2):
+        data = self.data
+        depth = depth
+        already_used = []
+        connections = []
+        flights = []
+
+        while depth > 0:
+            for i in data:
+                if i["origin"] == org and i["bags_allowed"] >= bags:
+                    if i["destination"] == des and i["bags_allowed"] >= bags:
+                        flights.append(i)
+                    else:
+                        connections.append(i)
+            depth = depth - 1
+            print(connections)
+        return flights
+
+
 
 a = SearchEngine("example2.csv")
-res = a.search(org='IUT', des="LOM", bags=1)
+res = a.get_routes(org='IUT', des="LOM", bags=2)
 print(res)
 
