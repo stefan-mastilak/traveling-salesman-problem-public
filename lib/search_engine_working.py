@@ -17,7 +17,6 @@ Optional arguments:
 
 import datetime
 import json
-import time
 from lib.csv_reader import CsvReader
 
 
@@ -38,7 +37,7 @@ class SearchEngine(CsvReader):
         :return: datetime as string ("%Y-%m-%d %H:%M:%S")
         :rtype: str
         """
-        return datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%dT%H:%M:%S")
+        return datetime.datetime.fromtimestamp(timestamp)
 
     @staticmethod
     def __calc_duration(arrival: float, departure: float):
@@ -61,16 +60,6 @@ class SearchEngine(CsvReader):
         :return:
         """
         return base + (bag * bags)
-
-    @staticmethod
-    def __to_timestamp(date: str):
-        """
-        Method will convert datetime from string in format "%Y-%m-%dT%H:%M:%S" to the timestamp
-        :param date: datetime string ("%Y-%m-%dT%H:%M:%S")
-        :return: timestamp
-        :rtype: float
-        """
-        return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
 
     @staticmethod
     def __to_seconds(hours: float):
@@ -218,126 +207,7 @@ class SearchEngine(CsvReader):
         result = self.__join_results(direct, connection)  # TODO: sort results by 'total_price'
         return json.dumps(result)
 
-    def get_edges(self):
-        """
-        EXPERIMENTAL - Get all possible origin-destination pairs from the available flights
-        """
-        routes = []
-        for i in self.data:
-            routes.append([i["origin"], i["destination"]]) if [i["origin"], i["destination"]] not in routes else None
-        return routes
 
-    def get_nodes(self):
-        """
-        EXPERIMENTAL - Get all nodes from the routes
-        """
-        sources, destinations = zip(*self.get_edges())
-        nodes = []
-        for i in sources:
-            nodes.append(i) if i not in nodes else None
-        for j in destinations:
-            nodes.append(j) if j not in nodes else None
-        return nodes
-
-    @staticmethod
-    def __transform_nodes(nodes):
-        tr_nodes = {}
-        for idx, node in enumerate(nodes):
-            tr_nodes[node] = idx
-        return tr_nodes
-
-    @staticmethod
-    def __transform_edges(edges, mappings):
-        tr_edges = []
-        for idx, edge in enumerate(edges):
-            tr_edges.append([mappings[edge[0]], mappings[edge[1]]])
-        return tr_edges
-
-    def calculate_routes(self, org, des):
-        from lib.graph import Graph
-        nodes = self.get_nodes()
-        edges = self.get_edges()
-        mappings = self.__transform_nodes(nodes)
-        edges = self.__transform_edges(edges, mappings)
-        print(mappings)
-
-        graph = Graph(vertices=len(nodes))
-        for i in edges:
-            graph.addEdge(i[0], i[1])
-        graph.printAllPaths(org, des)
-
-    def get_flights(self, org: str, des: str, bags=0, arr=0, initial=True):
-        """
-        Method for getting direct flights from origin to destination and connection flights from origin
-        :param org: origin (Origin airport code)
-        :param des: destination (Destination airport code)
-        :param bags: number of bags (0 by default)
-        :param arr: arrival timestamp
-        :param initial: True for getting initial flights
-        """
-        flights = []
-        connections = []
-
-        # iterate over flights:
-        for f in self.data:
-
-            # flight to destination:
-            if initial:
-                if f["origin"] == org and f["destination"] == des and f["bags_allowed"] >= bags:
-                    flights.append([f]) if [f] not in flights else None
-            else:
-                if f["origin"] == org and f["destination"] == des and f["bags_allowed"] >= bags \
-                        and arr+21600 >= f["departure"] >= arr+3600:
-                    flights.append([f]) if [f] not in flights else None
-
-            # connection flight:
-            if initial:
-                if f["origin"] == org and f["destination"] != des and f["bags_allowed"] >= bags:
-                    connections.append([f]) if [f] not in connections else None
-            else:
-                if f["origin"] == org and f["destination"] != des and f["bags_allowed"] >= bags and arr+21600 >= f["departure"] >= arr+3600:
-                    connections.append([f]) if [f] not in connections else None
-
-        # return results:
-        return flights, connections
-
-    def do_search(self, org, des, bags=0, depth=2):
-        search = self.get_flights(org, des, bags, initial=True)
-        flights = search[0]
-        connections = search[1]
-        visitations = [org]
-
-        # search for next connections:
-        while depth > 0:
-            new_connections = []
-            new_visitations = []
-            print(f'depth: {depth}')
-            for i in connections:
-                print(i)
-            # iterate over all existing connections:
-            for c in connections:
-                current_visitations = []
-                if c[-1]["destination"] not in visitations:
-                    new = self.get_flights(org=c[-1]["destination"], des=des, bags=bags, arr=c[-1]["arrival"], initial=False)
-                    # save new flights to destination:
-                    for fd in new[0]:
-                        flights.append([c[-1], fd[-1]])
-                    # save new connections:
-                    for nc in new[1]:
-                        new_connections.append([c[-1], nc[-1]])
-                        # update visited airports list:
-                        new_visitations.append(nc[-1]["destination"]) if nc[-1]["destination"] not in new_visitations else None
-            depth -= 1
-            connections = new_connections
-            visitations = list(dict.fromkeys(visitations + new_visitations))
-
-        # for f in flights:
-        #     print(f)
-        return flights
-
-
-a = SearchEngine("example3.csv")
-r = a.do_search(org='WUE', des='JBN', bags=2, depth=4)
-# r = a.get_connection_flights(org='WUE', des='JBN', bags=1)
-# print(r)
-
+a = SearchEngine("example1.csv")
+r = a.search(org='NIZ', des='NRX', bags=0)
+print(r)
