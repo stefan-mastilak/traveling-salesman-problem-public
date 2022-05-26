@@ -266,7 +266,7 @@ class SearchEngine(CsvReader):
             graph.addEdge(i[0], i[1])
         graph.printAllPaths(org, des)
 
-    def get_flights(self, org: str, des: str, bags=0, arr=0, initial=True):
+    def get_flights(self, org: str, des: str, bags=0, arr=None, initial=True):
         """
         Method for getting direct flights from origin to destination and connection flights from origin
         :param org: origin (Origin airport code)
@@ -277,6 +277,8 @@ class SearchEngine(CsvReader):
         """
         flights = []
         connections = []
+        if arr:
+            arr = self.__to_timestamp(arr)
 
         # iterate over flights:
         for f in self.data:
@@ -287,7 +289,7 @@ class SearchEngine(CsvReader):
                     flights.append([f]) if [f] not in flights else None
             else:
                 if f["origin"] == org and f["destination"] == des and f["bags_allowed"] >= bags \
-                        and arr+21600 >= f["departure"] >= arr+3600:
+                        and arr+21600 >= self.__to_timestamp(f["departure"]) >= arr+3600:
                     flights.append([f]) if [f] not in flights else None
 
             # connection flight:
@@ -295,49 +297,52 @@ class SearchEngine(CsvReader):
                 if f["origin"] == org and f["destination"] != des and f["bags_allowed"] >= bags:
                     connections.append([f]) if [f] not in connections else None
             else:
-                if f["origin"] == org and f["destination"] != des and f["bags_allowed"] >= bags and arr+21600 >= f["departure"] >= arr+3600:
+                if f["origin"] == org and f["destination"] != des and f["bags_allowed"] >= bags \
+                        and arr+21600 >= self.__to_timestamp(f["departure"]) >= arr+3600:
                     connections.append([f]) if [f] not in connections else None
 
         # return results:
         return flights, connections
 
-    def do_search(self, org, des, bags=0, depth=2):
+    def do_search(self, org, des, bags=0, hops=2):
         search = self.get_flights(org, des, bags, initial=True)
         flights = search[0]
         connections = search[1]
-        visitations = [org]
 
-        # search for next connections:
-        while depth > 0:
+        # search for next flights and connections:
+        while hops > 0:
             new_connections = []
-            new_visitations = []
-            print(f'depth: {depth}')
-            for i in connections:
-                print(i)
-            # iterate over all existing connections:
+            # iterate over connections:
             for c in connections:
-                current_visitations = []
+                # get visited airports for current connection:
+                visitations = []
+                for i in c[:-1]:
+                    visitations.append(i["origin"]) if i["origin"] not in visitations else None
+                    visitations.append(i["destination"]) if i["destination"] not in visitations else None
+
                 if c[-1]["destination"] not in visitations:
                     new = self.get_flights(org=c[-1]["destination"], des=des, bags=bags, arr=c[-1]["arrival"], initial=False)
                     # save new flights to destination:
                     for fd in new[0]:
-                        flights.append([c[-1], fd[-1]])
+                        new_flight = [i for i in c]
+                        new_flight.append(fd[-1])
+                        flights.append(new_flight) if new_flight not in flights else None
                     # save new connections:
                     for nc in new[1]:
-                        new_connections.append([c[-1], nc[-1]])
-                        # update visited airports list:
-                        new_visitations.append(nc[-1]["destination"]) if nc[-1]["destination"] not in new_visitations else None
-            depth -= 1
-            connections = new_connections
-            visitations = list(dict.fromkeys(visitations + new_visitations))
+                        new_connection = [i for i in c]
+                        new_connection.append(nc[-1])
+                        new_connections.append(new_connection)
 
-        # for f in flights:
-        #     print(f)
+            hops -= 1
+            connections = new_connections
         return flights
 
 
 a = SearchEngine("example3.csv")
-r = a.do_search(org='WUE', des='JBN', bags=2, depth=4)
+r = a.do_search(org='WUE', des='JBN', bags=2, hops=7)
+print(len(r))
+for i in r:
+    print(f'{i}\n')
 # r = a.get_connection_flights(org='WUE', des='JBN', bags=1)
-# print(r)
+
 

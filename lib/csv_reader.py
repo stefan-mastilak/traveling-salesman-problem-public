@@ -77,9 +77,6 @@ class CsvReader(object):
             current = {}
             for idx, val in enumerate(line):
                 current[header[idx]] = val
-            # transform datetime values to timestamps:
-            current["departure"] = self.__to_timestamp(current["departure"])
-            current["arrival"] = self.__to_timestamp(current["arrival"])
             # transform bags to integer:
             current["bags_allowed"] = int(current["bags_allowed"])
             # transform prices to floats:
