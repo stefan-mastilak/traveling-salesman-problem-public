@@ -4,10 +4,7 @@
 Data reader
 """
 
-import datetime
-import time
 import os
-import config as cfg
 
 
 class Reader(object):
@@ -20,7 +17,7 @@ class Reader(object):
         """
         :param filename: csv filename with extension
         """
-        self.filepath = os.path.join(cfg.ROOT_DIR, "example", filename)
+        self.filepath = os.path.join(os.getcwd(), "example", filename)
 
     def __get_raw_data(self):
         """
