@@ -269,11 +269,10 @@ class Searcher(Reader):
 
 
 a = Searcher("example3.csv")
-result = a.search(org='WUE', des='JBN', bags=2, max_conns=4)
+result = a.search(org='WUE', des='JBN', bags=2, max_conns=3)
 for i in result:
     print(f'length: {len(i["flights"])}')
     print(f'{i}\n')
-
 print(f'\nNumber of results: {len(result)}\n')
 
 
