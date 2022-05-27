@@ -10,7 +10,7 @@ from lib.search_engine import Searcher
 
 if __name__ == '__main__':
     """
-    argument parser for solution.py:
+    Argument parser
     NOTE: Usage is described in README.md file 
     """
 
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Add arguments:
-    parser.add_argument('data', type=str, help="data source file")
+    parser.add_argument('data', type=str, help="data source file (stored in examples folder)")
     parser.add_argument('org', type=str, help="origin airport code")
     parser.add_argument('des', type=str, help="destination airport code")
     parser.add_argument('-b', '--bags', type=int, required=False, default=0,
