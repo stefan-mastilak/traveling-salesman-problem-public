@@ -3,6 +3,7 @@
 """
 Main script
 """
+
 import argparse
 import json
 from lib.search_engine import Searcher

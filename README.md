@@ -3,6 +3,7 @@
 
 * Author: Stefan Mastilak
 * Contact: stefan.mastila@gmail.com
+* Python version: 3.9
 
 ### General:
 
@@ -18,7 +19,6 @@
   * bags: <integer> - number of requested bags (default 0)
   * max_connections: <integer> - maximum connection flights for a trip (default 2)
 
-* Python version: 3.9
 
 ### Usage:
 
