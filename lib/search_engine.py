@@ -49,7 +49,7 @@ class SearchEngine(CsvReader):
         :return: duration
         :rtype: str
         """
-        return str(datetime.timedelta(seconds=arrival-departure))
+        return str(datetime.timedelta(seconds=arrival - departure))
 
     @staticmethod
     def __calc_price(base: float, bag: float, bags: int):
@@ -81,17 +81,6 @@ class SearchEngine(CsvReader):
         :rtype: int
         """
         return hours * 3600
-
-    @staticmethod
-    def __join_results(direct, connection):
-        """
-        Join direct and connection flights results
-        :param direct: direct flights list
-        :param connection: connection flights list
-        :return: joined result
-        :rtype: list
-        """
-        return [*direct, *connection]
 
     def get_direct_flights(self, org: str, des: str, bags=0):
         """
@@ -203,21 +192,6 @@ class SearchEngine(CsvReader):
         # Return connection flights:
         return results
 
-    def search(self, org: str, des: str, bags=0, min_time=1, max_time=6):
-        """
-        Search method - searching of direct and connection flights from origin to destination.
-        :param org:
-        :param des:
-        :param bags:
-        :param min_time:
-        :param max_time:
-        :return:
-        """
-        direct = self.get_direct_flights(org, des, bags)
-        connection = self.get_connection_flights(org, des, bags, min_time, max_time)
-        result = self.__join_results(direct, connection)  # TODO: sort results by 'total_price'
-        return json.dumps(result)
-
     def get_edges(self):
         """
         EXPERIMENTAL - Get all possible origin-destination pairs from the available flights
@@ -229,7 +203,7 @@ class SearchEngine(CsvReader):
 
     def get_nodes(self):
         """
-        EXPERIMENTAL - Get all nodes from the routes
+        EXPERIMENTAL - Get all nodes from the routes(edges)
         """
         sources, destinations = zip(*self.get_edges())
         nodes = []
@@ -266,83 +240,121 @@ class SearchEngine(CsvReader):
             graph.addEdge(i[0], i[1])
         graph.printAllPaths(org, des)
 
-    def get_flights(self, org: str, des: str, bags=0, arr=None, initial=True):
+    def __get_flights(self, org: str, des: str, bags=0, arr=None, initial=True):
         """
-        Method for getting direct flights from origin to destination and connection flights from origin
+        Method for getting flights from origin to destination and connection flights from origin
         :param org: origin (Origin airport code)
         :param des: destination (Destination airport code)
         :param bags: number of bags (0 by default)
-        :param arr: arrival timestamp
+        :param arr: arrival datetime
         :param initial: True for getting initial flights
         """
         flights = []
         connections = []
+
+        # Transform to arrival datetime to timestamp:
         if arr:
             arr = self.__to_timestamp(arr)
 
-        # iterate over flights:
+        # Iterate over flights:
         for f in self.data:
 
-            # flight to destination:
+            # Get flights to destination:
             if initial:
                 if f["origin"] == org and f["destination"] == des and f["bags_allowed"] >= bags:
                     flights.append([f]) if [f] not in flights else None
             else:
                 if f["origin"] == org and f["destination"] == des and f["bags_allowed"] >= bags \
-                        and arr+21600 >= self.__to_timestamp(f["departure"]) >= arr+3600:
+                        and arr + 21600 >= self.__to_timestamp(f["departure"]) >= arr + 3600:
                     flights.append([f]) if [f] not in flights else None
 
-            # connection flight:
+            # Get connection flights:
             if initial:
                 if f["origin"] == org and f["destination"] != des and f["bags_allowed"] >= bags:
                     connections.append([f]) if [f] not in connections else None
             else:
                 if f["origin"] == org and f["destination"] != des and f["bags_allowed"] >= bags \
-                        and arr+21600 >= self.__to_timestamp(f["departure"]) >= arr+3600:
+                        and arr + 21600 >= self.__to_timestamp(f["departure"]) >= arr + 3600:
                     connections.append([f]) if [f] not in connections else None
 
-        # return results:
+        # Return flights and connections:
         return flights, connections
 
-    def do_search(self, org, des, bags=0, hops=2):
-        search = self.get_flights(org, des, bags, initial=True)
-        flights = search[0]
-        connections = search[1]
+    @staticmethod
+    def __get_visitations(connection: list):
+        """
+        Get visited airport codes from the connection chain
+        :param connection: connection flights chain
+        :return: list of visited airports codes based on the passed connection flights chain
+        :rtype: list
+        """
+        visitations = []
+        for i in connection[:-1]:
+            visitations.append(i["origin"]) if i["origin"] not in visitations else None
+            visitations.append(i["destination"]) if i["destination"] not in visitations else None
+        return visitations
 
-        # search for next flights and connections:
-        while hops > 0:
+    def search(self, org: str, des: str, bags=0, max_conns=2):
+        """
+        Search method for:
+        - direct flights from origin to destination
+        - connection flights from origin to destination (maximum of connections is defined by parameter: max_conns)
+        :param org: origin (Origin airport code)
+        :param des: destination (Destination airport code)
+        :param bags: number of bags (0 by default)
+        :param max_conns: maximum of connections for the trip
+        :return:
+        :rtype:
+        """
+        # Input conversions:
+        org = org.upper()
+        des = des.upper()
+
+        # INITIAL SEARCH:
+        # (Get direct flights from origin to destination and connections from origin)
+
+        flights, connections = self.__get_flights(org=org, des=des, bags=bags, initial=True)
+
+        # CONNECTIONS SEARCH:
+        # (Get next flights to destination and next connections)
+
+        while max_conns > 0:
+            # Clear new connections for current iteration:
             new_connections = []
-            # iterate over connections:
-            for c in connections:
-                # get visited airports for current connection:
-                visitations = []
-                for i in c[:-1]:
-                    visitations.append(i["origin"]) if i["origin"] not in visitations else None
-                    visitations.append(i["destination"]) if i["destination"] not in visitations else None
 
+            # Iterate over available connections:
+            for c in connections:
+                # Get visited airports for current connection:
+                visitations = self.__get_visitations(connection=c)
+                # Check for new flights to destination and next connections:
                 if c[-1]["destination"] not in visitations:
-                    new = self.get_flights(org=c[-1]["destination"], des=des, bags=bags, arr=c[-1]["arrival"], initial=False)
-                    # save new flights to destination:
+                    new = self.__get_flights(org=c[-1]["destination"],
+                                             des=des,
+                                             bags=bags,
+                                             arr=c[-1]["arrival"],
+                                             initial=False)
+                    # Save new flights to destination:
                     for fd in new[0]:
                         new_flight = [i for i in c]
                         new_flight.append(fd[-1])
                         flights.append(new_flight) if new_flight not in flights else None
-                    # save new connections:
+                    # Save next connections:
                     for nc in new[1]:
                         new_connection = [i for i in c]
                         new_connection.append(nc[-1])
                         new_connections.append(new_connection)
 
-            hops -= 1
+            # Decrement maximum connections:
+            max_conns -= 1
+
+            # Reassign connections:
             connections = new_connections
+
         return flights
 
 
 a = SearchEngine("example3.csv")
-r = a.do_search(org='WUE', des='JBN', bags=2, hops=7)
-print(len(r))
-for i in r:
-    print(f'{i}\n')
-# r = a.get_connection_flights(org='WUE', des='JBN', bags=1)
-
-
+result = a.search(org='WUE', des='JBn', bags=2, max_conns=8)
+for x in result:
+    print(f'\n{x}')
+print(f'\nNumber of results: {len(result)}\n')
