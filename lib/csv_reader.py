@@ -57,7 +57,7 @@ class Reader(object):
             if len(case) == len(header):
                 pass
             else:
-                raise ValueError(f"Inconsistent flight data")
+                raise ValueError(f"Inconsistent flight data - missing values")
 
         # format data
         formatted_data = []

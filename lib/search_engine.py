@@ -16,7 +16,6 @@ Optional arguments:
 """
 
 import datetime
-import json
 import time
 from lib.csv_reader import Reader
 
@@ -62,7 +61,7 @@ class Searcher(Reader):
         return base + (bag * bags)
 
     @staticmethod
-    def __to_seconds(hours: float):
+    def __hours_to_seconds(hours: float):
         """
         Convert hours to seconds.
         :param hours: number of hours to convert
@@ -269,7 +268,7 @@ class Searcher(Reader):
 
 
 a = Searcher("example3.csv")
-result = a.search(org='WUE', des='JBN', bags=2, max_conns=4)
+result = a.search(org='WUE', des='JBN', bags=2, max_conns=5)
 for res in result:
     print(f'flights in total: {len(res["flights"])}')
     print(f'{res}\n')
