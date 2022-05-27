@@ -269,10 +269,10 @@ class Searcher(Reader):
 
 
 a = Searcher("example3.csv")
-result = a.search(org='WUE', des='JBN', bags=2, max_conns=3)
-for i in result:
-    print(f'length: {len(i["flights"])}')
-    print(f'{i}\n')
+result = a.search(org='WUE', des='JBN', bags=2, max_conns=4)
+for res in result:
+    print(f'flights in total: {len(res["flights"])}')
+    print(f'{res}\n')
 print(f'\nNumber of results: {len(result)}\n')
 
 
