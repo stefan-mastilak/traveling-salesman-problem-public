@@ -18,12 +18,12 @@ Optional arguments:
 import datetime
 import json
 import time
-from lib.csv_reader import CsvReader
+from lib.csv_reader import Reader
 
 
-class SearchEngine(CsvReader):
+class Searcher(Reader):
     """
-    Search engine
+    Search engine class
     """
 
     def __init__(self, *args):
@@ -39,6 +39,16 @@ class SearchEngine(CsvReader):
         :rtype: str
         """
         return datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%dT%H:%M:%S")
+
+    @staticmethod
+    def __to_timestamp(date: str):
+        """
+        Method will convert datetime from string in format "%Y-%m-%dT%H:%M:%S" to the timestamp
+        :param date: datetime string ("%Y-%m-%dT%H:%M:%S")
+        :return: timestamp
+        :rtype: float
+        """
+        return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
 
     @staticmethod
     def __calc_duration(arrival: float, departure: float):
@@ -61,16 +71,6 @@ class SearchEngine(CsvReader):
         :return:
         """
         return base + (bag * bags)
-
-    @staticmethod
-    def __to_timestamp(date: str):
-        """
-        Method will convert datetime from string in format "%Y-%m-%dT%H:%M:%S" to the timestamp
-        :param date: datetime string ("%Y-%m-%dT%H:%M:%S")
-        :return: timestamp
-        :rtype: float
-        """
-        return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
 
     @staticmethod
     def __to_seconds(hours: float):
@@ -353,7 +353,7 @@ class SearchEngine(CsvReader):
         return flights
 
 
-a = SearchEngine("example3.csv")
+a = Searcher("example3.csv")
 result = a.search(org='WUE', des='JBn', bags=2, max_conns=8)
 for x in result:
     print(f'\n{x}')

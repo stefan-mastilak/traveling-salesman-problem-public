@@ -10,7 +10,7 @@ import os
 import config as cfg
 
 
-class CsvReader(object):
+class Reader(object):
     """
     Class for reading data from .csv file
     NOTE: I'm not sure if csv module is allowed, even if its part of standard lib
@@ -22,16 +22,6 @@ class CsvReader(object):
         """
         self.filepath = os.path.join(cfg.ROOT_DIR, "example", filename)
 
-    @staticmethod
-    def __to_timestamp(date: str):
-        """
-        Method will convert datetime from string in format "%Y-%m-%dT%H:%M:%S" to the timestamp
-        :param date: datetime string ("%Y-%m-%dT%H:%M:%S")
-        :return: timestamp
-        :rtype: float
-        """
-        return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
-
     def __get_raw_data(self):
         """
         Open a .csv file and read it line-by-line and return its content
@@ -40,18 +30,16 @@ class CsvReader(object):
         """
         if os.path.exists(self.filepath):
             with open(file=self.filepath, mode='r') as file:
-                content = []
-                for line in file.readlines():
-                    content.append(line.replace("\n", ""))
+                content = [line.replace("\n", "") for line in file.readlines()]
                 if content:
                     if len(content) > 1:
                         return content
                     else:
-                        raise Exception(f"No flight data found in: {self.filepath}")
+                        raise Exception(f"No data found in: {self.filepath}")
                 else:
                     raise EOFError(f"Empty file: {self.filepath}")
         else:
-            raise FileNotFoundError(f"Provided filepath doesn't exist: {self.filepath}")
+            raise FileNotFoundError(f"Filepath doesn't exist: {self.filepath}")
 
     def read_data(self):
         """
