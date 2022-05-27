@@ -9,7 +9,7 @@
  Solution for searching flights based on data fetched from the .csv file stored in examples folder.
  
 #### Restrictions:
-  * search on ALL available combinations
+  * search on all available combinations
   * in case of a combination of A -> B -> C, the layover time in B should not be less than 1h and more than 6h
   * no repeating airports in the same trip
   * output is sorted by the final price of the trip
