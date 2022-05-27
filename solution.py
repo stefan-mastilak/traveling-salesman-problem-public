@@ -33,4 +33,3 @@ if __name__ == '__main__':
     # Get flights:
     results = Searcher(args.data).search(org=args.org, des=args.des, bags=args.bags, max_conns=args.max_connections)
     print(json.dumps(results, indent=4, sort_keys=False))
-    print(f'\nResults count: {len(results)}')
