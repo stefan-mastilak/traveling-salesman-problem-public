@@ -96,11 +96,12 @@ class Searcher(Reader):
     @staticmethod
     def __calc_price(base: float, bag: float, bags: int):
         """
-        Calculate total flight price as sum of base flight price and price for bags
+        Calculate flight price as sum of base flight price and price for bags
         :param base: base price of flight
         :param bag: bag price
         :param bags: number of bags
-        :return:
+        :return: flight price considering baggage total price
+        :rtype: float
         """
         return base + (bag * bags)
 
@@ -212,17 +213,21 @@ class Searcher(Reader):
         :param des: destination (Destination airport code)
         :param bags: number of bags (0 by default)
         :param max_conns: maximum of connections for the trip (2 by default)
-        :return:
-        :rtype:
+        :return: found flights
+        :rtype: list
         """
         # Input conversions:
         org = org.upper()
         des = des.upper()
 
-        # 1) INITIAL SEARCH: (Get direct flights from origin to destination and connections from origin)
+        # 1) INITIAL SEARCH
+        # Get direct flights from origin to destination and connections from origin:
+
         flights, connections = self.__get_flights(org=org, des=des, bags=bags, initial=True)
 
-        # 2) CONNECTIONS SEARCH: (Get next flights to destination and next connections)
+        # 2) CONNECTIONS SEARCH
+        # Get next flights to destination and next connections:
+
         while max_conns > 0:
             # Clear new connections for current iteration:
             new_connections = []
@@ -256,6 +261,8 @@ class Searcher(Reader):
             max_conns -= 1
             connections = new_connections
 
-        # 3) RETURN RESULTS: (Including transformation to desired output)
+        # 3) RETURN RESULTS
+        # Including transformation to desired output
+
         flights = self.__transform_results(org, des, bags, flights)
         return flights
