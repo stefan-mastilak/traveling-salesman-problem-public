@@ -259,13 +259,3 @@ class Searcher(Reader):
         # 3) RETURN RESULTS: (Including transformation to desired output)
         flights = self.__transform_results(org, des, bags, flights)
         return flights
-
-
-a = Searcher("example3.csv")
-result = a.search(org='WUE', des='JBN', bags=2, max_conns=5)
-for res in result:
-    print(f'flights in total: {len(res["flights"])}')
-    print(f'{res}\n')
-print(f'\nNumber of results: {len(result)}\n')
-
-
