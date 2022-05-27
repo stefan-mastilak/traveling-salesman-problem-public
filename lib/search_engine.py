@@ -219,14 +219,10 @@ class Searcher(Reader):
         org = org.upper()
         des = des.upper()
 
-        # 1) INITIAL SEARCH:
-        # -- Get direct flights from origin to destination and connections from origin
-
+        # 1) INITIAL SEARCH: (Get direct flights from origin to destination and connections from origin)
         flights, connections = self.__get_flights(org=org, des=des, bags=bags, initial=True)
 
-        # 2) CONNECTIONS SEARCH:
-        # -- Get next flights to destination and next connections
-
+        # 2) CONNECTIONS SEARCH: (Get next flights to destination and next connections)
         while max_conns > 0:
             # Clear new connections for current iteration:
             new_connections = []
@@ -256,13 +252,11 @@ class Searcher(Reader):
                         new.append(nc[-1])
                         new_connections.append(new) if new not in new_connections else None
 
-            # Decrement maximum connections and reassign connections::
+            # Decrement max_conns and reassign connections:
             max_conns -= 1
             connections = new_connections
 
-        # 3) RETURN RESULTS:
-        # -- Including transformation to desired output
-
+        # 3) RETURN RESULTS: (Including transformation to desired output)
         flights = self.__transform_results(org, des, bags, flights)
         return flights
 
