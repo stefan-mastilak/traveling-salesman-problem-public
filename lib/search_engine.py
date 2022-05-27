@@ -51,17 +51,6 @@ class Searcher(Reader):
         return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
 
     @staticmethod
-    def __calc_duration(arrival: float, departure: float):
-        """
-        Method will calculate duration based on arrival and departure timestamp
-        :param arrival: arrival timestamp
-        :param departure: departure timestamp
-        :return: duration
-        :rtype: str
-        """
-        return str(datetime.timedelta(seconds=arrival - departure))
-
-    @staticmethod
     def __calc_price(base: float, bag: float, bags: int):
         """
         Calculate total flight price as sum of base flight price and price for bags
@@ -82,119 +71,10 @@ class Searcher(Reader):
         """
         return hours * 3600
 
-    def get_direct_flights(self, org: str, des: str, bags=0):
-        """
-        Search for direct flights from source to destination.
-        :param org: origin (Origin airport code)
-        :param des: destination (Destination airport code)
-        :param bags: number of bags (0 by default)
-        :return: direct flights
-        :rtype: dict
-        """
-        # Conversions:
-        org = str(org.upper())
-        des = str(des.upper())
-
-        result = []
-
-        # Iterate over all flights:
-        for flight in self.data:
-            # Get flight details:
-            _org = flight['origin']
-            _des = flight['destination']
-            _dep = flight['departure']
-            _arr = flight['arrival']
-            _bags = flight['bags_allowed']
-            _base_price = flight['base_price']
-            _bag_price = flight['bag_price']
-
-            # Check direct flights:
-            if org == _org and des == _des and bags <= _bags:
-                direct = {"flights": [flight],
-                          "bags_allowed": _bags,
-                          "bags_count": bags,
-                          "destination": des,
-                          "origin": org,
-                          "travel_time": self.__calc_duration(arrival=_arr, departure=_dep),
-                          "total_price": self.__calc_price(base=_base_price, bag=_bag_price, bags=bags)}
-
-                # Append direct flights to the result:
-                result.append(direct)
-
-        # Return direct flights:
-        return result
-
-    def get_connection_flights(self, org: str, des: str, bags=0, min_time=1, max_time=6):
-        """
-        Search for connection flights from source to destination.
-        :param org: origin (Origin airport code)
-        :param des: destination (Destination airport code)
-        :param bags: number of bags (0 by default)
-        :param min_time: minimum time for connection in hours (1h by default)
-        :param max_time: maximum time for connection in hours (6h by default)
-        :return:
-        """
-        # Conversions:
-        org = str(org.upper())
-        des = str(des.upper())
-        min_time = self.__to_seconds(hours=min_time)
-        max_time = self.__to_seconds(hours=max_time)
-
-        results = []
-        conn_origins = []
-        conn_destinations = []
-
-        # Iterate over all flights:
-        for flight in self.data:
-            # Get flight details:
-            _org = flight['origin']
-            _des = flight['destination']
-            _bags = flight['bags_allowed']
-
-            # Get all flights from origin and not to destination:
-            conn_origins.append(flight) if org == _org and des != _des and bags <= _bags else None
-
-            # Get all flights to destination and not from origin:
-            conn_destinations.append(flight) if des == _des and org != _org and bags <= _bags else None
-
-        # Pair connections:
-        for i in conn_origins:
-            _org_des = i["destination"]
-            _org_dep = i["departure"]
-            _org_arr = i["arrival"]
-            _org_bags = i["bags_allowed"]
-            _org_base_price = i["base_price"]
-            _org_bag_price = i["bag_price"]
-            _org_total = self.__calc_price(base=_org_base_price, bag=_org_bag_price, bags=bags)
-
-            for j in conn_destinations:
-                _des_org = j["origin"]
-                _des_dep = j["departure"]
-                _des_arr = j["arrival"]
-                _des_bags = j["bags_allowed"]
-                _des_base_price = j["base_price"]
-                _des_bag_price = j["bag_price"]
-                _des_total = self.__calc_price(base=_des_base_price, bag=_des_bag_price, bags=bags)
-
-                # Check connection flights:
-                if _org_des == _des_org and min_time <= (_des_dep - _org_arr) <= max_time:
-                    connection = {"flights": [i, j],
-                                  "bags_allowed": _org_bags if _org_bags < _des_bags else _des_bags,
-                                  "bags_count": bags,
-                                  "destination": des,
-                                  "origin": org,
-                                  "total_price": _org_total + _des_total,
-                                  "travel_time": self.__calc_duration(arrival=_des_arr, departure=_org_dep)
-                                  }
-                    # Append connection flight to the result:
-                    results.append(connection)
-
-        # Return connection flights:
-        return results
-
     def get_edges(self):
         """
         EXPERIMENTAL - Get all possible origin-destination pairs from the available flights
+        NOTE: Not used
         """
         routes = []
         for i in self.data:
@@ -204,6 +84,7 @@ class Searcher(Reader):
     def get_nodes(self):
         """
         EXPERIMENTAL - Get all nodes from the routes(edges)
+        NOTE: Not used
         """
         sources, destinations = zip(*self.get_edges())
         nodes = []
@@ -214,31 +95,74 @@ class Searcher(Reader):
         return nodes
 
     @staticmethod
-    def __transform_nodes(nodes):
-        tr_nodes = {}
-        for idx, node in enumerate(nodes):
-            tr_nodes[node] = idx
-        return tr_nodes
+    def __get_allowed_bags(flight: list):
+        """
+        Get allowed bags count as minimum of allowed baggage from all flights in flight chain
+        :param flight: flight chain
+        :return: minimum baggage count
+        :rtype: int
+        """
+        max_no_of_bags = [f["bags_allowed"] for f in flight]
+        return min(max_no_of_bags)
+
+    def __get_trip_price(self, bags: int, flight: list):
+        """
+        Get total trip price as sum of each flight base_price and bag_price multiplied by number_of_bags
+        :param bags: number of bags in the trip
+        :param flight: flight chain
+        :return: trip total price
+        :rtype: float
+        """
+        prices = [self.__calc_price(base=f["base_price"], bag=f["bag_price"], bags=bags) for f in flight]
+        return sum(prices)
+
+    def __get_trip_duration(self, flight: list):
+        """
+        Get trip duration as subtraction of destination arrival timestamp and origin departure timestamp
+        :param flight: flight chain
+        :return: trip duration
+        :rtype: str
+        """
+        start = self.__to_timestamp(flight[0]["departure"])
+        end = self.__to_timestamp(flight[-1]["arrival"])
+        return str(datetime.timedelta(seconds=end - start))
+
+    def __transform_results(self, org, des, bags, flights: list):
+        """
+        Transform found flights to the desired output
+        :param org: origin (Origin airport code)
+        :param des: destination (Destination airport code)
+        :param bags: number of bags
+        :param flights: list of found flight chains
+        :return: transformed results
+        :rtype: list
+        """
+        transformed = []
+        for flight in flights:
+            current = {"flights": [f for f in flight],
+                       "bags_allowed": self.__get_allowed_bags(flight=flight),
+                       "bags_count": bags,
+                       "destination": des,
+                       "origin": org,
+                       "total_price": self.__get_trip_price(bags=bags, flight=flight),
+                       "travel_time": self.__get_trip_duration(flight=flight)
+                       }
+            transformed.append(current)
+        return sorted(transformed, key=lambda p: p["total_price"])
 
     @staticmethod
-    def __transform_edges(edges, mappings):
-        tr_edges = []
-        for idx, edge in enumerate(edges):
-            tr_edges.append([mappings[edge[0]], mappings[edge[1]]])
-        return tr_edges
-
-    def calculate_routes(self, org, des):
-        from lib.graph import Graph
-        nodes = self.get_nodes()
-        edges = self.get_edges()
-        mappings = self.__transform_nodes(nodes)
-        edges = self.__transform_edges(edges, mappings)
-        print(mappings)
-
-        graph = Graph(vertices=len(nodes))
-        for i in edges:
-            graph.addEdge(i[0], i[1])
-        graph.printAllPaths(org, des)
+    def __get_visitations(connection: list):
+        """
+        Get visited airport codes from the connection chain
+        :param connection: connection flights chain
+        :return: list of visited airports codes based on the passed connection flights chain
+        :rtype: list
+        """
+        visitations = []
+        for i in connection[:-1]:
+            visitations.append(i["origin"]) if i["origin"] not in visitations else None
+            visitations.append(i["destination"]) if i["destination"] not in visitations else None
+        return visitations
 
     def __get_flights(self, org: str, des: str, bags=0, arr=None, initial=True):
         """
@@ -280,29 +204,15 @@ class Searcher(Reader):
         # Return flights and connections:
         return flights, connections
 
-    @staticmethod
-    def __get_visitations(connection: list):
-        """
-        Get visited airport codes from the connection chain
-        :param connection: connection flights chain
-        :return: list of visited airports codes based on the passed connection flights chain
-        :rtype: list
-        """
-        visitations = []
-        for i in connection[:-1]:
-            visitations.append(i["origin"]) if i["origin"] not in visitations else None
-            visitations.append(i["destination"]) if i["destination"] not in visitations else None
-        return visitations
-
     def search(self, org: str, des: str, bags=0, max_conns=2):
         """
         Search method for:
-        - direct flights from origin to destination
-        - connection flights from origin to destination (maximum of connections is defined by parameter: max_conns)
+        * direct flights from origin to destination
+        * connection flights from origin to destination (maximum of connections is defined by parameter: max_conns)
         :param org: origin (Origin airport code)
         :param des: destination (Destination airport code)
         :param bags: number of bags (0 by default)
-        :param max_conns: maximum of connections for the trip
+        :param max_conns: maximum of connections for the trip (2 by default)
         :return:
         :rtype:
         """
@@ -310,13 +220,13 @@ class Searcher(Reader):
         org = org.upper()
         des = des.upper()
 
-        # INITIAL SEARCH:
-        # (Get direct flights from origin to destination and connections from origin)
+        # 1) INITIAL SEARCH:
+        # -- Get direct flights from origin to destination and connections from origin
 
         flights, connections = self.__get_flights(org=org, des=des, bags=bags, initial=True)
 
-        # CONNECTIONS SEARCH:
-        # (Get next flights to destination and next connections)
+        # 2) CONNECTIONS SEARCH:
+        # -- Get next flights to destination and next connections
 
         while max_conns > 0:
             # Clear new connections for current iteration:
@@ -351,29 +261,19 @@ class Searcher(Reader):
             max_conns -= 1
             connections = new_connections
 
+        # 3) RETURN RESULTS:
+        # -- Including transformation to desired output
+
         flights = self.__transform_results(org, des, bags, flights)
         return flights
 
-    @ staticmethod
-    def __transform_results(org, des, bags, flights: list):
-        transformed = []
-        for flight in flights:
-            current = {"flights": [f for f in flight],
-                       "bags_allowed": None,
-                       "bags_count": bags,
-                       "destination": des,
-                       "origin": org,
-                       "total_price": None,
-                       "travel_time": None
-                       }
-            transformed.append(current)
-        return transformed
-
 
 a = Searcher("example3.csv")
-result = a.search(org='WUE', des='JBN', bags=2, max_conns=1)
+result = a.search(org='WUE', des='JBN', bags=2, max_conns=4)
 for i in result:
+    print(f'length: {len(i["flights"])}')
     print(f'{i}\n')
 
 print(f'\nNumber of results: {len(result)}\n')
+
 
