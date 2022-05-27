@@ -50,17 +50,6 @@ class Searcher(Reader):
         return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
 
     @staticmethod
-    def __calc_price(base: float, bag: float, bags: int):
-        """
-        Calculate total flight price as sum of base flight price and price for bags
-        :param base: base price of flight
-        :param bag: bag price
-        :param bags: number of bags
-        :return:
-        """
-        return base + (bag * bags)
-
-    @staticmethod
     def __hours_to_seconds(hours: float):
         """
         Convert hours to seconds.
@@ -103,6 +92,17 @@ class Searcher(Reader):
         """
         max_no_of_bags = [f["bags_allowed"] for f in flight]
         return min(max_no_of_bags)
+
+    @staticmethod
+    def __calc_price(base: float, bag: float, bags: int):
+        """
+        Calculate total flight price as sum of base flight price and price for bags
+        :param base: base price of flight
+        :param bag: bag price
+        :param bags: number of bags
+        :return:
+        """
+        return base + (bag * bags)
 
     def __get_trip_price(self, bags: int, flight: list):
         """
