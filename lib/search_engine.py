@@ -322,39 +322,58 @@ class Searcher(Reader):
             # Clear new connections for current iteration:
             new_connections = []
 
-            # Iterate over available connections:
+            # Iterate over connections:
             for c in connections:
                 # Get visited airports for current connection:
                 visitations = self.__get_visitations(connection=c)
-                # Check for new flights to destination and next connections:
+
+                # Check for new flights and new connections:
                 if c[-1]["destination"] not in visitations:
-                    new = self.__get_flights(org=c[-1]["destination"],
-                                             des=des,
-                                             bags=bags,
-                                             arr=c[-1]["arrival"],
-                                             initial=False)
+
+                    new_flights, new_conns = self.__get_flights(org=c[-1]["destination"],
+                                                                des=des,
+                                                                bags=bags,
+                                                                arr=c[-1]["arrival"],
+                                                                initial=False)
                     # Save new flights to destination:
-                    for fd in new[0]:
-                        new_flight = [i for i in c]
-                        new_flight.append(fd[-1])
-                        flights.append(new_flight) if new_flight not in flights else None
+                    for nf in new_flights:
+                        new = [i for i in c]
+                        new.append(nf[-1])
+                        flights.append(new) if new not in flights else None
+
                     # Save next connections:
-                    for nc in new[1]:
-                        new_connection = [i for i in c]
-                        new_connection.append(nc[-1])
-                        new_connections.append(new_connection)
+                    for nc in new_conns:
+                        new = [i for i in c]
+                        new.append(nc[-1])
+                        new_connections.append(new) if new not in new_connections else None
 
-            # Decrement maximum connections:
+            # Decrement maximum connections and reassign connections::
             max_conns -= 1
-
-            # Reassign connections:
             connections = new_connections
 
+        flights = self.__transform_results(org, des, bags, flights)
         return flights
+
+    @ staticmethod
+    def __transform_results(org, des, bags, flights: list):
+        transformed = []
+        for flight in flights:
+            current = {"flights": [f for f in flight],
+                       "bags_allowed": None,
+                       "bags_count": bags,
+                       "destination": des,
+                       "origin": org,
+                       "total_price": None,
+                       "travel_time": None
+                       }
+            transformed.append(current)
+        return transformed
 
 
 a = Searcher("example3.csv")
-result = a.search(org='WUE', des='JBn', bags=2, max_conns=8)
-for x in result:
-    print(f'\n{x}')
+result = a.search(org='WUE', des='JBN', bags=2, max_conns=1)
+for i in result:
+    print(f'{i}\n')
+
 print(f'\nNumber of results: {len(result)}\n')
+
