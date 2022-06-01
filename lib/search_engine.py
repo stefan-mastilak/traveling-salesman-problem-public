@@ -8,11 +8,6 @@ Restrictions:
     - in case of a combination of A -> B -> C, the layover time in B should not be less than 1h and more than 6h
     - no repeating airports in the same trip
     - output is sorted by the final price of the trip
-
-Optional arguments:
-    - You may add any number of additional search parameters to boost your chances to attend:
-        - bags: <integer> - number of requested bags (default 0)
-        - return: <bool> - is it a return flight (default false)
 """
 
 import datetime
@@ -212,7 +207,7 @@ class Searcher(Reader):
         :param org: origin (Origin airport code)
         :param des: destination (Destination airport code)
         :param bags: number of bags (0 by default)
-        :param max_conns: maximum of connections for the trip (2 by default)
+        :param max_conns: maximum of connections for the trip (0 by default)
         :return: found flights
         :rtype: list
         """
