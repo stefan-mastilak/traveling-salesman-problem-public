@@ -17,7 +17,7 @@
 
 #### Optional arguments:
   * bags: <integer> - number of requested bags (default 0)
-  * max_connections: <integer> - maximum connection flights for a trip (default 2)
+  * max_connections: <integer> - maximum connection flights for a trip (default 0)
 
 
 ### Usage:
@@ -34,7 +34,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -b BAGS, --bags BAGS  number of baggage pieces (default 0)
   -m MAX_CONNECTIONS, --max_connections MAX_CONNECTIONS
-                        maximum connections (default 2)
+                        maximum connections (default 0)
 ```
 
 ### Usage examples:
@@ -63,7 +63,7 @@ optional arguments:
 # EXAMPLE 3 
 
   # To filter flights stored in example1.csv from NRX to SML 
-  # NOTE: No optional arguments passed - default values will be used (0 for baggage, 2 for maximum of connections) 
+  # NOTE: No optional arguments passed - baggage limit and maximum connections will not be considered
   
   python -m solution example1.csv NRX SML
 ```
