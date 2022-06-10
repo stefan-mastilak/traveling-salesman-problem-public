@@ -38,6 +38,7 @@ class Searcher(Reader):
     def __to_timestamp(date: str):
         """
         Method will convert datetime from string in format "%Y-%m-%dT%H:%M:%S" to the timestamp
+        NOTE: use fromisoformat method
         :param date: datetime string ("%Y-%m-%dT%H:%M:%S")
         :return: timestamp
         :rtype: float
