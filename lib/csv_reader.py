@@ -5,12 +5,12 @@ Data reader
 """
 
 import os
+import csv
 
 
 class Reader(object):
     """
     Class for reading data from .csv file
-    NOTE: I'm not sure if csv module is allowed, even if its part of standard lib
     """
 
     def __init__(self, filename: str):
@@ -26,8 +26,9 @@ class Reader(object):
         :rtype: list
         """
         if os.path.exists(self.filepath):
-            with open(file=self.filepath, mode='r') as file:
-                content = [line.replace("\n", "") for line in file.readlines()]
+            with open(file=self.filepath, mode='r') as csv_file:
+                csv_reader = csv.reader(csv_file)
+                content = [line for line in csv_reader]
                 if content:
                     if len(content) > 1:
                         return content
@@ -46,8 +47,8 @@ class Reader(object):
         """
         # data split:
         raw_data = self.__get_raw_data()
-        header = {idx: val for idx, val in enumerate(raw_data[0].split(sep=","))}
-        flight_data = [i.split(sep=",") for i in raw_data[1:]]
+        header = {idx: val for idx, val in enumerate(raw_data[0])}
+        flight_data = [i for i in raw_data[1:]]
 
         # data consistency check:
         for case in flight_data:
