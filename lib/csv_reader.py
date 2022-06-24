@@ -8,9 +8,9 @@ import os
 import csv
 
 
-class Reader(object):
+class Reader:
     """
-    Class for reading data from .csv file
+    Class for reading data from csv file
     """
 
     def __init__(self, filename: str):
@@ -21,7 +21,7 @@ class Reader(object):
 
     def __get_raw_data(self):
         """
-        Open a .csv file and read it line-by-line and return its content
+        Open csv file and read it line-by-line and return its raw content
         :return: content of file (list of its lines)
         :rtype: list
         """
@@ -57,7 +57,7 @@ class Reader(object):
             else:
                 raise ValueError(f"Inconsistent flight data - missing values")
 
-        # format data
+        # format data:
         formatted_data = []
         for line in flight_data:
             current = {}
@@ -71,5 +71,4 @@ class Reader(object):
             # append current flight case:
             formatted_data.append(current)
 
-        # return formatted data:
         return formatted_data

@@ -2,6 +2,7 @@
 
 """
 Main script
+NOTE: Usage is described in README.md file
 """
 
 import argparse
@@ -12,7 +13,6 @@ from lib.search_engine import Searcher
 if __name__ == '__main__':
     """
     Argument parser
-    NOTE: Usage is described in README.md file 
     """
 
     # Create parser:
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--max_connections', type=int, required=False, default=0,
                         help="maximum connections (default 0)")
 
-    # Parse the arguments
+    # Parse the arguments:
     args = parser.parse_args()
 
     # Get flights:
