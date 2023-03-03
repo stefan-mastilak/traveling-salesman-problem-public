@@ -11,7 +11,7 @@ Search engine restrictions:
 
 import datetime
 import time
-from lib.csv_reader import Reader
+from reader import Reader
 
 
 class Searcher(Reader):
@@ -43,29 +43,6 @@ class Searcher(Reader):
         :rtype: float
         """
         return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S").timetuple())
-
-    def get_edges(self):
-        """
-        EXPERIMENTAL - Get all possible origin-destination pairs from the available flights
-        NOTE: Not used
-        """
-        routes = []
-        for i in self.data:
-            routes.append([i["origin"], i["destination"]]) if [i["origin"], i["destination"]] not in routes else None
-        return routes
-
-    def get_nodes(self):
-        """
-        EXPERIMENTAL - Get all nodes from the routes(edges)
-        NOTE: Not used
-        """
-        sources, destinations = zip(*self.get_edges())
-        nodes = []
-        for i in sources:
-            nodes.append(i) if i not in nodes else None
-        for j in destinations:
-            nodes.append(j) if j not in nodes else None
-        return nodes
 
     @staticmethod
     def __get_allowed_bags(flight: list):

@@ -7,7 +7,7 @@ NOTE: Usage is described in README.md file
 
 import argparse
 import json
-from lib.search_engine import Searcher
+from search_engine import Searcher
 
 
 if __name__ == '__main__':
